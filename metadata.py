@@ -1,20 +1,5 @@
 from email.parser import HeaderParser
-
-multi = {
-    'Platform',
-    'Supported-Platform',
-    'Classifier',
-    'Requires-Dist',
-    'Provides-Dist',
-    'Obsoletes-Dist',
-    'Requires-External',
-    'Project-URL',
-    'Provides-Extra',
-}
-
-treat_as_multi = {
-    'Keywords',
-}
+from metadata import constants
 
 
 def canonicalize(metadata):
@@ -46,12 +31,13 @@ def extract_metadata(string):
     """
     metadata = {}
     parsed = HeaderParser().parsestr(string)
+    # TODO: when using HeaderParser, it stops finding headers after a multiline entry. This isn't good enough as we allow multiline fields.
     for key, value in parsed.items():
-        if key in multi:
+        if key in constants.MULTI:
             if key not in metadata:
                 metadata[key] = []
             metadata[key].append(value)
-        elif key in treat_as_multi:
+        elif key in constants.TREAT_AS_MULTI:
             metadata[key] = value.split(',')
         else:
             metadata[key] = value

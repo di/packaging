@@ -379,13 +379,29 @@ class Metadata:
     def __iter__(self):
         return iter(self.meta_dict.items())
 
+    def parsed(self, string):
+        # TODO: this parser shoudl work, but it doesn't seem to handle multiline :( Spec says we can use this.
+        parsed = HeaderParser().parsestr(string)
+
+        lines = string.split('\n')
+        for line in lines:
+            split = line.split(':')
+            if len(split) == 1:
+                value = split[0]
+            else:
+                key = split[0]
+                value = ':'.join(split[1:])
+            yield key, value
+
     def _metadata_from_pkginfo_string(self, string):
         """
         Extract metadata
         """
         metadata = {}
-        parsed = HeaderParser().parsestr(string)
-        for key, value in parsed.items():
+        # TODO: header parser doesn't seem to actually do multiline
+        #parsed = HeaderParser().parsestr(string)
+        parsed = self.parsed(string)
+        for key, value in parsed:#.items():
             if key in constants.MULTI:
                 if key not in metadata:
                     metadata[key] = []
