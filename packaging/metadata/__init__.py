@@ -3,6 +3,8 @@ import re
 import tarfile
 from email.parser import HeaderParser
 
+from six import with_metaclass
+
 from . import constants
 from . import validators
 
@@ -108,13 +110,19 @@ _legacy_specifier_re = re.compile(
 class Field:
     def __init__(self, validators=None):
         self.validators = validators
+        self.data = None
 
     def validate(self):
-        raise NotImplementedError
+        raise NotImplementedError(self)
 
 
 class SingleField(Field):
-    pass
+    def validate(self):
+        for validator in self.validators:
+            try:
+                validator.validate(self)
+            except validators.StopValidation:
+                break
 
 
 class MultiField(Field):
@@ -140,14 +148,15 @@ class MetadataMeta(type):
         return type.__call__(cls, *args, **kwargs)
 
 
-class BaseMetadataValidator(metaclass=MetadataMeta):
+class BaseMetadata(with_metaclass(MetadataMeta)):
 
     def __init__(self, meta_dict):
-        self.meta_dict = meta_dict
+        for field_name, field in self.fields:
+            field.data = meta_dict.get(field_name)
 
     def validate(self):
-        for field_name, validator in self.fields:
-            print(field_name)
+        for field_name, field in self.fields:
+            field.validate()
 
     # Metadata version
     metadata_version = SingleField(
@@ -164,7 +173,7 @@ class BaseMetadataValidator(metaclass=MetadataMeta):
     )
 
 
-class Metadata1_2Validator(BaseMetadataValidator):
+class Metadata1_2(BaseMetadata):
 
     # Identity Project and Release
     name = SingleField(
@@ -379,29 +388,28 @@ class Metadata:
     def __iter__(self):
         return iter(self.meta_dict.items())
 
-    def parsed(self, string):
-        # TODO: this parser shoudl work, but it doesn't seem to handle multiline :( Spec says we can use this.
-        parsed = HeaderParser().parsestr(string)
-
-        lines = string.split('\n')
-        for line in lines:
-            split = line.split(':')
-            if len(split) == 1:
-                value = split[0]
-            else:
-                key = split[0]
-                value = ':'.join(split[1:])
-            yield key, value
 
     def _metadata_from_pkginfo_string(self, string):
-        """
-        Extract metadata
+        """Extracts metadata information from a metadata-version 2.1 object.
+
+        https://www.python.org/dev/peps/pep-0566/#json-compatible-metadata
+
+        - The original key-value format should be read with email.parser.HeaderParser;
+        - All transformed keys should be reduced to lower case. Hyphens should
+          be replaced with underscores, but otherwise should retain all other
+          characters;
+        - The transformed value for any field marked with "(Multiple-use")
+          should be a single list containing all the original values for the
+          given key;
+        - The Keywords field should be converted to a list by splitting the
+          original value on whitespace characters;
+        - The message body, if present, should be set to the value of the
+          description key.
+        - The result should be stored as a string-keyed dictionary.
         """
         metadata = {}
-        # TODO: header parser doesn't seem to actually do multiline
-        #parsed = HeaderParser().parsestr(string)
-        parsed = self.parsed(string)
-        for key, value in parsed:#.items():
+        parsed = HeaderParser().parsestr(string)
+        for key, value in parsed.items():
             if key in constants.MULTI:
                 if key not in metadata:
                     metadata[key] = []
@@ -414,18 +422,28 @@ class Metadata:
         return self._canonicalize(metadata)
 
     def _canonicalize(self, metadata):
+        """
+        Transforms a metadata object to the canonical representation
+        as specified in
+        https://www.python.org/dev/peps/pep-0566/#json-compatible-metadata
+        All transformed keys should be reduced to lower case. Hyphens
+        should be replaced with underscores, but otherwise should retain all
+        other characters.
+        """
         return {
             key.lower().replace('-', '_'): value
             for key, value in metadata.items()
         }
 
     def validate(self):
-        base_validator = BaseMetadataValidator(self.meta_dict)
-        if base_validator.validate():
-            metadata_version = base_validator.metadata_version
+        base_meta = BaseMetadata(self.meta_dict)
+        base_meta.validate()
+        metadata_version = base_meta.metadata_version.data
 
-            versioned_validator = {
-                '1.2': Metadata1_2Validator
-            }[metadata_version](self.meta_dict)
+        metadata_classes = {
+            '1.2': Metadata1_2,
+        }
+        metadata_class = metadata_classes.get(metadata_version)
+        versioned_meta = metadata_class(self.meta_dict)
 
-            versioned_validator.validate()
+        versioned_meta.validate()
