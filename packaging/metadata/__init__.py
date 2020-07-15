@@ -1,16 +1,16 @@
 import os
 import re
 import tarfile
+
 from email.parser import HeaderParser
 from email import message_from_string
-from email.message import EmailMessage
+from email.message import Message
+
 import json
 from six import with_metaclass
 
-import constants
-# from . import validators
-
-
+from . constants import MULTI, SINGLE, TREAT_AS_MULTI
+# import constants
 class UnknownDistributionFormat(Exception):
     pass
 
@@ -74,150 +74,6 @@ distribution_types = {
 def json_form(val):
     return val.lower().replace("-", "_")
 
-class Field:
-    def __init__(self, validators=None):
-        self.validators = validators
-        self.data = None
-
-    def validate(self):
-        raise NotImplementedError(self)
-
-
-class SingleField(Field):
-    def validate(self):
-        pass
-
-class MultiField(Field):
-    pass
-
-
-class MetadataMeta(type):
-    def __init__(cls, name, bases, attrs):
-        type.__init__(cls, name, bases, attrs)
-        cls.fields = None
-
-    def __call__(cls, *args, **kwargs):
-        if cls.fields is None:
-            fields = []
-            for name in dir(cls):
-                if not name.startswith('_'):
-                    unbound_field = getattr(cls, name)
-                    if isinstance(unbound_field, Field):
-                        fields.append((name, unbound_field))
-            fields.sort()
-            cls.fields = fields
-
-        return type.__call__(cls, *args, **kwargs)
-
-
-class BaseMetadataSpecification(with_metaclass(MetadataMeta)):
-
-    def __init__(self, meta_dict):
-        for field_name, field in self.fields:
-            field.data = meta_dict.get(field_name)
-
-    def validate(self):
-        for field_name, field in self.fields:
-            field.validate()
-
-    # Metadata version
-    metadata_version = SingleField(validators=[])
-
-
-class Metadata1_2Specification(BaseMetadataSpecification):
-
-    # Identity Project and Release
-    name = SingleField(
-        validators=[],
-    )
-    version = SingleField(
-        validators=[],
-    )
-
-    # Additional Release metadata
-    summary = SingleField(
-        validators=[],
-    )
-    description = SingleField(
-        validators=[],
-    )
-    author = SingleField()
-    author_email = SingleField(
-        validators=[],
-    )
-    maintainer = SingleField(
-        validators=[],
-    )
-    maintainer_email = SingleField(
-        validators=[],
-    )
-    license = SingleField(validators=[])
-    keywords = SingleField(validators=[])
-    classifiers = MultiField(validators=[])
-    platform = SingleField(validators=[])
-
-    # URLs
-    home_page = SingleField(
-        validators=[],
-    )
-    download_url = SingleField(
-        validators=[],
-    )
-
-    # Dependency Information
-    requires_python = SingleField(
-        validators=[],
-    )
-
-    # File information
-    pyversion = SingleField(
-        validators=[],
-    )
-    filetype = SingleField(
-        validators=[]
-    )
-    comment = SingleField(validators=[])
-    md5_digest = SingleField(
-        validators=[],
-    )
-    sha256_digest = SingleField(
-        validators=[]
-    )
-    blake2_256_digest = SingleField(
-        validators=[]
-    )
-
-    # Legacy dependency information
-    requires = MultiField(
-        validators=[]
-    )
-    provides = MultiField(
-        validators=[],
-    )
-    obsoletes = MultiField(
-        validators=[],
-    )
-
-    # Newer dependency information
-    requires_dist = MultiField(
-        validators=[],
-    )
-    provides_dist = MultiField(
-        validators=[],
-    )
-    obsoletes_dist = MultiField(
-        validators=[],
-    )
-    requires_external = MultiField(
-        validators=[],
-    )
-
-    # Newer metadata information
-    project_urls = MultiField(
-        validators=[],
-    )
-
-
 class Metadata:
 
     def __init__(self, **kwargs):
@@ -241,12 +97,12 @@ class Metadata:
     def from_file(cls, filename):
         for extension, distribution_cls in distribution_types.items():
             if filename.endswith(extension):
-                self.distribution = distribution_cls(filename)
+                distribution = distribution_cls(filename)
                 break
         else:
             raise UnknownDistributionFormat
 
-        return cls(**Metadata._metadata_from_pkginfo_string(self.distribution.extract_pkginfo()))
+        return cls(**Metadata._metadata_from_pkginfo_string(distribution.extract_pkginfo()))
     
     @classmethod
     def from_rfc822(cls, pkginfo_string):
@@ -257,8 +113,8 @@ class Metadata:
         return json.dumps(self.meta_dict)
 
     def to_rfc822(self):
-        msg = EmailMessage()
-        for field in constants.SINGLE | constants.MULTI | constants.TREAT_AS_MULTI:
+        msg = Message()
+        for field in SINGLE | MULTI | TREAT_AS_MULTI:
             value = self.meta_dict.get(json_form(field))
             if value:
                 if field == "Description":
@@ -299,11 +155,11 @@ class Metadata:
         metadata = {}
         parsed = HeaderParser().parsestr(string)
         for key, value in parsed.items():
-            if key in constants.MULTI:
+            if key in MULTI:
                 if key not in metadata:
                     metadata[key] = []
                 metadata[key].append(value)
-            elif key in constants.TREAT_AS_MULTI:
+            elif key in TREAT_AS_MULTI:
                 metadata[key] = [val.strip() for val in value.split(',')]
             else:
                 metadata[key] = value
@@ -335,3 +191,7 @@ class Metadata:
 
     def validate(self):
         raise NotImplementedError
+
+# if __name__ == "__main__":
+#     m_1 = Metadata(name="foo", version="1.0", keywords=["a", "b", "c"], description="Hello\nworld")
+  
