@@ -32,8 +32,6 @@ class TestMetaData:
         assert metadata_1 == metadata_2
 
     def test_from_file(self, monkeypatch):
-        #TODO: Makes sure that the "dist" returns a PKGINFO String we already know
-        #TODO: Will this fly? Cuz we need 100% code cov and we want to actually test extract_pkginfo
         monkeypatch.setattr(
             SDistTar,
             "extract_pkginfo",
