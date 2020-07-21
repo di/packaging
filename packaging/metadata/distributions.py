@@ -1,0 +1,47 @@
+import os
+import re
+import tarfile
+from zipfile import ZipFile
+
+class SDist():
+    def __init__(self, filename):
+        self.filename = filename
+    
+    def extract_pkginfo(self):
+        raise NotImplementedError()
+
+class SDistTar(SDist):
+
+    def extract_pkginfo(self):
+        with tarfile.open(self.filename) as archive:
+            dirname = os.path.commonprefix(archive.getnames())
+            member = archive.extractfile('/'.join([dirname, 'PKG-INFO']))
+            if member:
+                return member.read().decode()
+            raise NoMetadataFound
+
+class SDistZip(SDist):
+    
+    def extract_pkginfo(self):
+        with ZipFile(self.filename) as archive:
+            # No way to get earliest starting dir so we need to look for PKG-INFO
+            names = archive.namelist()
+            for name in names:
+                if "PKG-INFO" in name:
+                    data = archive.open(name).read()
+                    if b'Metadata-Version' in data:
+                        return data.decode()
+
+
+class Wheel():
+    def __init__(self, filename):
+        self.filename = filename
+
+    def extract_pkginfo(self):
+        with ZipFile(self.filename) as archive:
+            names = archive.namelist()
+            for name in names:
+                if "METADATA" in name:
+                    data = archive.open(name).read()
+                    if b'Metadata-Version' in data:
+                        return data.decode()

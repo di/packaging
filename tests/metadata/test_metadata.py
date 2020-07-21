@@ -32,18 +32,7 @@ class TestMetaData:
         assert metadata_1 == metadata_2
 
     def test_from_file(self, monkeypatch):
-        monkeypatch.setattr(
-            SDistTar,
-            "extract_pkginfo",
-            lambda _: VALID_PACKAGE_1_0
-        )
-
-        metadata_1 = Metadata.from_file("fake_dist.tar.gz")
         
-        #Uses VALID_PACKAGE_1_0 
-        metadata_2 = Metadata(metadata_version="1.0", name="test-package", version="0.1", summary="description", home_page="UNKNOWN", author="John Doe", author_email="blah@example.com", license="UNKNOWN", description="UNKNOWN", platform=["UNKNOWN"])
-        
-        assert metadata_1 == metadata_2
 
     def test_to_json(self):
         metadata_1 = Metadata(name="foo", version="1.0", keywords=["a", "b", "c"], description="Hello\nworld")
@@ -59,4 +48,3 @@ class TestMetaData:
 
         assert metadata_1 == metadata_2
 
-    #Do we need to test the helper functions explicitly? They are already called by the other public API functions.

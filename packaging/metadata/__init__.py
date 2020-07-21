@@ -5,12 +5,12 @@ import tarfile
 from email.parser import HeaderParser
 from email import message_from_string
 from email.message import Message
-
+import pkginfo
 import json
 from six import with_metaclass
-
+from . sdist import SDistTar, SDistZip, Wheel
 from . constants import MULTI, SINGLE, TREAT_AS_MULTI
-# import constants
+
 class UnknownDistributionFormat(Exception):
     pass
 
@@ -23,49 +23,9 @@ class MultipleMetadataFound(Exception):
     pass
 
 
-class Distribution:
-    def __init__(self, filename):
-        self.filename = filename
-
-    def extract_pkginfo(self):
-        raise NotImplementedError
-
-
-class Wheel(Distribution):
-    pass
-
-
-class WinInst(Distribution):
-    pass
-
-
-class BDist(Distribution):
-    pass
-
-
-class SDist(Distribution):
-    pass
-
-
-class SDistZip(SDist):
-    pass
-
-
-class SDistTar(SDist):
-
-    def extract_pkginfo(self):
-        archive = tarfile.open(self.filename)
-        dirname = os.path.commonprefix(archive.getnames())
-        member = archive.extractfile('/'.join([dirname, 'PKG-INFO']))
-        if member:
-            return member.read().decode()
-        raise NoMetadataFound
-
 
 distribution_types = {
     ".whl": Wheel,
-    ".exe": WinInst,
-    ".egg": BDist,
     ".tar.bz2": SDistTar,
     ".tar.gz": SDistTar,
     ".zip": SDistZip,
@@ -130,6 +90,9 @@ class Metadata:
 
         return msg.as_string()
 
+    def to_dict(self):
+        return self.meta_dict
+
     def __iter__(self):
         return iter(self.meta_dict.items())
 
@@ -191,7 +154,3 @@ class Metadata:
 
     def validate(self):
         raise NotImplementedError
-
-# if __name__ == "__main__":
-#     m_1 = Metadata(name="foo", version="1.0", keywords=["a", "b", "c"], description="Hello\nworld")
-  
