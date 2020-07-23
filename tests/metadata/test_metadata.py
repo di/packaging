@@ -2,11 +2,10 @@
 # 2.0, and the BSD License. See the LICENSE file in the root of this repository
 # for complete details.
 
-from packaging.metadata import Metadata, SDistTar
+from packaging.metadata import Metadata
 from . test_metadata_constants import VALID_PACKAGE_1_0, VALID_PACKAGE_1_2
 import pytest
-
-
+import os
 class TestMetaData:
     
     def test_kwargs_init(self):
@@ -31,7 +30,20 @@ class TestMetaData:
 
         assert metadata_1 == metadata_2
 
-    def test_from_file(self, monkeypatch):
+    @pytest.mark.parametrize(
+        "filename",
+        ["test_pkg.whl", "test_pkg.tar.gz", "test_pkg.zip", "test_pkg.tar.bz2"]
+    )
+    def test_from_file(self, filename):
+        correct_metadata_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "METADATA")
+        m_1 = Metadata.from_rfc822(open(correct_metadata_file).read())
+        test_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
+        m_2 = Metadata.from_file(test_file)
+
+        print(m_1.to_dict())
+        print(m_2.to_dict())
+
+        assert m_2 == m_1 
         
 
     def test_to_json(self):

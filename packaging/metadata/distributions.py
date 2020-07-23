@@ -17,20 +17,19 @@ class SDistTar(SDist):
             dirname = os.path.commonprefix(archive.getnames())
             member = archive.extractfile('/'.join([dirname, 'PKG-INFO']))
             if member:
-                return member.read().decode()
+                return member.read().decode("utf-8")
             raise NoMetadataFound
 
 class SDistZip(SDist):
     
     def extract_pkginfo(self):
         with ZipFile(self.filename) as archive:
-            # No way to get earliest starting dir so we need to look for PKG-INFO
             names = archive.namelist()
             for name in names:
                 if "PKG-INFO" in name:
                     data = archive.open(name).read()
                     if b'Metadata-Version' in data:
-                        return data.decode()
+                        return data.decode("utf-8")
 
 
 class Wheel():
@@ -44,4 +43,4 @@ class Wheel():
                 if "METADATA" in name:
                     data = archive.open(name).read()
                     if b'Metadata-Version' in data:
-                        return data.decode()
+                        return data.decode("utf-8")

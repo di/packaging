@@ -5,10 +5,9 @@ import tarfile
 from email.parser import HeaderParser
 from email import message_from_string
 from email.message import Message
-import pkginfo
 import json
 from six import with_metaclass
-from . sdist import SDistTar, SDistZip, Wheel
+from . distributions import SDistTar, SDistZip, Wheel
 from . constants import MULTI, SINGLE, TREAT_AS_MULTI
 
 class UnknownDistributionFormat(Exception):
@@ -127,12 +126,10 @@ class Metadata:
             else:
                 metadata[key] = value
         
-        payload = message_from_string(string).get_payload()
-        
+        payload = parsed.get_payload()
         if payload:
             if "description" in metadata:
                 print("Both Description and payload given - ignoring Description")
-            
             metadata["description"] = payload
         
         return Metadata._canonicalize(metadata)
