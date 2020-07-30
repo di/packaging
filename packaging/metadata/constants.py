@@ -1,3 +1,33 @@
+
+VERSIONED_METADATA_FIELDS = {
+
+    "1.0" : {
+    "MULTI" : {},        
+    "TREAT_AS_MULTI" : {},
+    "SINGLE": {}
+            },
+
+    "1.1" : {
+    "MULTI" : {},
+    "TREAT_AS_MULTI" : {},
+    "SINGLE" : {},
+    },
+
+    "1.2" : {
+    "MULTI" : {},
+    "TREAT_AS_MULTI" : {},
+    "SINGLE" : {},
+    },
+
+    "2.1" : {
+    "MULTI" : {},
+    "TREAT_AS_MULTI" : {},
+    "SINGLE" : {}
+            }
+}
+
+
+
 MULTI = {
     "Platform",
     "Supported-Platform",

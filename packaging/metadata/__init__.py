@@ -1,27 +1,15 @@
 import os
 import re
 import tarfile
-
+import textwrap
 from email.parser import HeaderParser
 from email import message_from_string
 from email.message import Message
 import json
 from six import with_metaclass
-from . distributions import SDistTar, SDistZip, Wheel
+from . distributions import SDistTar, SDistZip, Wheel, Distribution
 from . constants import MULTI, SINGLE, TREAT_AS_MULTI
-
-class UnknownDistributionFormat(Exception):
-    pass
-
-
-class NoMetadataFound(Exception):
-    pass
-
-
-class MultipleMetadataFound(Exception):
-    pass
-
-
+from . exceptions import UnknownDistributionFormat, NoMetadataFound, MultipleMetadataFound, UnknownCustomDistributionFormat
 
 distribution_types = {
     ".whl": Wheel,
@@ -37,11 +25,11 @@ class Metadata:
 
     def __init__(self, **kwargs):
         self.meta_dict = kwargs
-        #self.validate()
 
     def __eq__(self, other):
         if isinstance(other, Metadata):
             return self.meta_dict == other.meta_dict
+        return False
 
 
     @classmethod
@@ -53,19 +41,25 @@ class Metadata:
         return cls(**data)
     
     @classmethod
-    def from_file(cls, filename):
-        for extension, distribution_cls in distribution_types.items():
-            if filename.endswith(extension):
-                distribution = distribution_cls(filename)
-                break
+    def from_file(cls, filename, filetype=None):
+        if filetype:
+            if issubclass(filetype, Distribution):
+                distribution = filetype(filename)
+            else:
+                raise UnknownCustomDistributionFormat
         else:
-            raise UnknownDistributionFormat
+            for extension, distribution_cls in distribution_types.items():
+                if filename.endswith(extension):
+                    distribution = distribution_cls(filename)
+                    break
+            else:
+                raise UnknownDistributionFormat
 
-        return cls(**Metadata._metadata_from_pkginfo_string(distribution.extract_pkginfo()))
+        return cls(**Metadata._pkginfo_string_to_dict(distribution.extract_pkginfo()))
     
     @classmethod
     def from_rfc822(cls, pkginfo_string):
-        return cls(**Metadata._metadata_from_pkginfo_string(pkginfo_string))
+        return cls(**Metadata._pkginfo_string_to_dict(pkginfo_string))
 
     
     def to_json(self):
@@ -96,7 +90,7 @@ class Metadata:
         return iter(self.meta_dict.items())
 
     @classmethod
-    def _metadata_from_pkginfo_string(cls, string):
+    def _pkginfo_string_to_dict(cls, string):
         """Extracts metadata information from a metadata-version 2.1 object.
 
         https://www.python.org/dev/peps/pep-0566/#json-compatible-metadata
@@ -117,21 +111,24 @@ class Metadata:
         metadata = {}
         parsed = HeaderParser().parsestr(string)
         for key, value in parsed.items():
+            # print(key)
             if key in MULTI:
                 if key not in metadata:
                     metadata[key] = []
                 metadata[key].append(value)
             elif key in TREAT_AS_MULTI:
                 metadata[key] = [val.strip() for val in value.split(',')]
+            elif key == "Description":
+                value = cls.standardize_description_field(value)
+                metadata[key] = value
             else:
                 metadata[key] = value
-        
         payload = parsed.get_payload()
         if payload:
-            if "description" in metadata:
+            if "Description" in metadata:
                 print("Both Description and payload given - ignoring Description")
-            metadata["description"] = payload
-        
+            metadata["Description"] = payload
+
         return Metadata._canonicalize(metadata)
 
     @classmethod
@@ -151,3 +148,15 @@ class Metadata:
 
     def validate(self):
         raise NotImplementedError
+
+    @classmethod
+    def standardize_description_field(cls, description):
+        description_lines = description.splitlines()
+        
+        if len(description_lines) == 1:
+            return description
+        
+        first_line = description_lines[0].lstrip()
+        dedented = '\n'.join([first_line, textwrap.dedent('\n'.join(description_lines[1:]))])
+        
+        return dedented

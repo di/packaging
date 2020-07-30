@@ -3,12 +3,15 @@ import re
 import tarfile
 from zipfile import ZipFile
 
-class SDist():
+
+class Distribution():
     def __init__(self, filename):
         self.filename = filename
-    
     def extract_pkginfo(self):
-        raise NotImplementedError()
+            raise NotImplementedError()
+
+class SDist(Distribution):
+    pass
 
 class SDistTar(SDist):
 
@@ -32,9 +35,7 @@ class SDistZip(SDist):
                         return data.decode("utf-8")
 
 
-class Wheel():
-    def __init__(self, filename):
-        self.filename = filename
+class Wheel(Distribution):
 
     def extract_pkginfo(self):
         with ZipFile(self.filename) as archive:
