@@ -2,14 +2,23 @@ import os
 import re
 import tarfile
 import textwrap
+try:
+    from StringIO import StringIO ## for Python 2
+except ImportError:
+    from io import StringIO ## for Python 3
 from email.parser import HeaderParser
 from email import message_from_string
 from email.message import Message
 import json
 from six import with_metaclass
-from . distributions import SDistTar, SDistZip, Wheel, Distribution
-from . constants import MULTI, SINGLE, TREAT_AS_MULTI
-from . exceptions import UnknownDistributionFormat, NoMetadataFound, MultipleMetadataFound, UnknownCustomDistributionFormat
+from .distributions import SDistTar, SDistZip, Wheel, Distribution
+from .constants import MULTI, SINGLE, TREAT_AS_MULTI
+from .exceptions import (
+    UnknownDistributionFormat,
+    NoMetadataFound,
+    MultipleMetadataFound,
+    UnknownCustomDistributionFormat,
+)
 
 distribution_types = {
     ".whl": Wheel,
@@ -18,11 +27,12 @@ distribution_types = {
     ".zip": SDistZip,
 }
 
+
 def json_form(val):
     return val.lower().replace("-", "_")
 
-class Metadata:
 
+class Metadata:
     def __init__(self, **kwargs):
         self.meta_dict = kwargs
 
@@ -31,15 +41,14 @@ class Metadata:
             return self.meta_dict == other.meta_dict
         return False
 
-
     @classmethod
     def from_json(cls, data):
         return cls(**Metadata._canonicalize(json.loads(data)))
-    
+
     @classmethod
     def from_dict(cls, data):
         return cls(**data)
-    
+
     @classmethod
     def from_file(cls, filename, filetype=None):
         if filetype:
@@ -54,14 +63,14 @@ class Metadata:
                     break
             else:
                 raise UnknownDistributionFormat
-
+        # print("PKG-INFO string")
+        # print(distribution.extract_pkginfo())
         return cls(**Metadata._pkginfo_string_to_dict(distribution.extract_pkginfo()))
-    
+
     @classmethod
     def from_rfc822(cls, pkginfo_string):
         return cls(**Metadata._pkginfo_string_to_dict(pkginfo_string))
 
-    
     def to_json(self):
         return json.dumps(self.meta_dict)
 
@@ -109,7 +118,7 @@ class Metadata:
         - The result should be stored as a string-keyed dictionary.
         """
         metadata = {}
-        parsed = HeaderParser().parsestr(string)
+        parsed = HeaderParser().parse(StringIO(string))
         for key, value in parsed.items():
             # print(key)
             if key in MULTI:
@@ -117,7 +126,7 @@ class Metadata:
                     metadata[key] = []
                 metadata[key].append(value)
             elif key in TREAT_AS_MULTI:
-                metadata[key] = [val.strip() for val in value.split(',')]
+                metadata[key] = [val.strip() for val in value.split(",")]
             elif key == "Description":
                 value = cls.standardize_description_field(value)
                 metadata[key] = value
@@ -141,10 +150,7 @@ class Metadata:
         should be replaced with underscores, but otherwise should retain all
         other characters.
         """
-        return {
-            json_form(key): value
-            for key, value in metadata.items()
-        }
+        return {json_form(key): value for key, value in metadata.items()}
 
     def validate(self):
         raise NotImplementedError
@@ -152,11 +158,13 @@ class Metadata:
     @classmethod
     def standardize_description_field(cls, description):
         description_lines = description.splitlines()
-        
+
         if len(description_lines) == 1:
             return description
-        
+
         first_line = description_lines[0].lstrip()
-        dedented = '\n'.join([first_line, textwrap.dedent('\n'.join(description_lines[1:]))])
-        
+        dedented = "\n".join(
+            [first_line, textwrap.dedent("\n".join(description_lines[1:]))]
+        )
+
         return dedented
