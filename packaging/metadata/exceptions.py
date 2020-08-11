@@ -12,7 +12,3 @@ class NoMetadataFound(MetadataException):
 
 class MultipleMetadataFound(MetadataException):
     pass
-
-
-class UnknownCustomDistributionFormat(MetadataException):
-    pass

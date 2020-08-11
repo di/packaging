@@ -2,22 +2,22 @@ import os
 import re
 import tarfile
 import textwrap
+
 try:
-    from StringIO import StringIO ## for Python 2
+    from StringIO import StringIO  ## for Python 2
 except ImportError:
-    from io import StringIO ## for Python 3
+    from io import StringIO  ## for Python 3
 from email.parser import HeaderParser
 from email import message_from_string
 from email.message import Message
 import json
 from six import with_metaclass
 from .distributions import SDistTar, SDistZip, Wheel, Distribution
-from .constants import MULTI, SINGLE, TREAT_AS_MULTI
+from .constants import VERSIONED_METADATA_FIELDS
 from .exceptions import (
     UnknownDistributionFormat,
     NoMetadataFound,
     MultipleMetadataFound,
-    UnknownCustomDistributionFormat,
 )
 
 distribution_types = {
@@ -26,6 +26,11 @@ distribution_types = {
     ".tar.gz": SDistTar,
     ".zip": SDistZip,
 }
+
+try:
+    UNICODE_CLASS = unicode
+except NameError:
+    UNICODE_CLASS = str
 
 
 def json_form(val):
@@ -55,7 +60,7 @@ class Metadata:
             if issubclass(filetype, Distribution):
                 distribution = filetype(filename)
             else:
-                raise UnknownCustomDistributionFormat
+                raise UnknownDistributionFormat
         else:
             for extension, distribution_cls in distribution_types.items():
                 if filename.endswith(extension):
@@ -72,11 +77,29 @@ class Metadata:
         return cls(**Metadata._pkginfo_string_to_dict(pkginfo_string))
 
     def to_json(self):
-        return json.dumps(self.meta_dict)
+        return json.dumps(self.meta_dict, sort_keys=True)
+
+    # def to_rfc822(self):
+    #     msg = Message()
+    #     for field in SINGLE | MULTI | TREAT_AS_MULTI:
+    #         value = self.meta_dict.get(json_form(field))
+    #         if value:
+    #             if field == "Description":
+    #                 # Special case - put in payload
+    #                 msg.set_payload(value)
+    #                 continue
+    #             if field == "Keywords":
+    #                 value = ", ".join(value)
+    #             if isinstance(value, str):
+    #                 value = [value]
+    #             for item in value:
+    #                 msg.add_header(field, item)
+
+    #     return msg.as_string()
 
     def to_rfc822(self):
         msg = Message()
-        for field in SINGLE | MULTI | TREAT_AS_MULTI:
+        for field in SINGLE | MULTI:
             value = self.meta_dict.get(json_form(field))
             if value:
                 if field == "Description":
@@ -119,13 +142,20 @@ class Metadata:
         """
         metadata = {}
         parsed = HeaderParser().parse(StringIO(string))
+        metadata_fields = VERSIONED_METADATA_FIELDS[parsed.get("Metadata-Version")]
+
         for key, value in parsed.items():
-            # print(key)
-            if key in MULTI:
+
+            if not isinstance(key, UNICODE_CLASS):
+                key = key.decode("utf-8")
+            if not isinstance(value, UNICODE_CLASS):
+                value = value.decode("utf-8")
+
+            if key in metadata_fields["MULTI"]:
                 if key not in metadata:
                     metadata[key] = []
                 metadata[key].append(value)
-            elif key in TREAT_AS_MULTI:
+            elif key in metadata_fields["TREAT_AS_MULTI"]:
                 metadata[key] = [val.strip() for val in value.split(",")]
             elif key == "Description":
                 value = cls.standardize_description_field(value)
