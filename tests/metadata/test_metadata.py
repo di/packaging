@@ -25,11 +25,6 @@ from .test_metadata_constants import (
 # from .test_metadata_constants import *
 import pytest
 
-try:
-    from StringIO import StringIO  ## for Python 2
-except ImportError:
-    from io import StringIO  ## for Python 3
-
 
 class TestMetaData:
     def test_kwargs_init(self):

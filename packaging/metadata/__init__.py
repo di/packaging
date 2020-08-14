@@ -1,18 +1,9 @@
-try:
-    from StringIO import StringIO  ## for Python 2
-except ImportError:
-    from io import StringIO  ## for Python 3
 from email.parser import HeaderParser
 from email.message import Message
 from typing import Dict, Any, Iterator
 import json
 from .constants import VERSIONED_METADATA_FIELDS
 
-
-try:
-    UNICODE_CLASS = unicode
-except NameError:
-    UNICODE_CLASS = str
 
 
 def json_form(val: str) -> str:
@@ -53,13 +44,13 @@ class Metadata:
         ):
             value = self.meta_dict.get(json_form(field))
             if value:
-                if field == UNICODE_CLASS("Description"):
+                if field == "Description":
                     # Special case - put in payload
                     msg.set_payload(value)
                     continue
-                if field == UNICODE_CLASS("Keywords"):
+                if field == "Keywords":
                     value = ",".join(value)
-                if isinstance(value, UNICODE_CLASS):
+                if isinstance(value, str):
                     value = [value]
                 for item in value:
                     msg.add_header(field, item)
@@ -73,7 +64,7 @@ class Metadata:
         return iter(self.meta_dict.items())
 
     @classmethod
-    def _pkginfo_string_to_dict(cls, string: str) -> Dict[str, Any]:
+    def _pkginfo_string_to_dict(cls, pkg_info_string: str) -> Dict[str, Any]:
         """Extracts metadata information from a metadata-version 2.1 object.
 
         https://www.python.org/dev/peps/pep-0566/#json-compatible-metadata
@@ -92,15 +83,10 @@ class Metadata:
         - The result should be stored as a string-keyed dictionary.
         """
         metadata = {}  # type : Dict[str, Any]
-        parsed = HeaderParser().parse(StringIO(string))
+        parsed = HeaderParser().parsestr(pkg_info_string)
         metadata_fields = VERSIONED_METADATA_FIELDS[parsed.get("Metadata-Version")]
 
         for key, value in parsed.items():
-
-            if not isinstance(key, UNICODE_CLASS):
-                key = key.decode("utf-8")
-            if not isinstance(value, UNICODE_CLASS):
-                value = value.decode("utf-8")
 
             if key in metadata_fields["MULTI"]:
                 if key not in metadata:
@@ -110,16 +96,14 @@ class Metadata:
                 metadata[key] = [val.strip() for val in value.split(",")]
             else:
                 metadata[key] = value
+        
         payload = parsed.get_payload()
         if payload:
 
             if "Description" in metadata:
                 print("Both Description and payload given - ignoring Description")
 
-            if not isinstance(payload, UNICODE_CLASS):
-                payload = payload.decode("utf-8")
-
-            metadata[UNICODE_CLASS("Description")] = payload
+            metadata["Description"] = payload
 
         return Metadata._canonicalize(metadata)
 
