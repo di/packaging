@@ -1,20 +1,34 @@
 # This file is dual licensed under the terms of the Apache License, Version
 # 2.0, and the BSD License. See the LICENSE file in the root of this repository
 # for complete details.
-
+from __future__ import absolute_import, division, print_function
 from packaging.metadata import Metadata
-from packaging.metadata.distributions import Distribution
 
-# from .test_metadata_constants import VALID_PACKAGE_2_1_RFC822, VALID_PACKAGE_2_1_JSON, VALID_PACKAGE_2_1_DICT, VALID_PACKAGE_1_0_RFC822, VALID_PACKAGE_1_0_DICT, VALID_PACKAGE_1_0_JSON, VALID_PACKAGE_1_0_RFC822, VALID_PACKAGE_1_1_RFC822, VALID_PACKAGE_1_1_DICT, VALID_PACKAGE_1_1_JSON, VALID_PACKAGE_1_2_RFC822, VALID_PACKAGE_1_2_DICT, VALID_PACKAGE_1_2_JSON
-from .test_metadata_constants import *
-import pytest
-import os
-from packaging.metadata.exceptions import (
-    UnknownDistributionFormat,
-    NoMetadataFound,
-    MultipleMetadataFound,
+from .test_metadata_constants import (
+    VALID_PACKAGE_2_1_RFC822,
+    VALID_PACKAGE_2_1_JSON,
+    VALID_PACKAGE_2_1_DICT,
+    VALID_PACKAGE_1_0_RFC822,
+    VALID_PACKAGE_1_0_DICT,
+    VALID_PACKAGE_1_0_JSON,
+    VALID_PACKAGE_1_0_RFC822,
+    VALID_PACKAGE_1_1_RFC822,
+    VALID_PACKAGE_1_1_DICT,
+    VALID_PACKAGE_1_1_JSON,
+    VALID_PACKAGE_1_2_RFC822,
+    VALID_PACKAGE_1_2_DICT,
+    VALID_PACKAGE_1_2_JSON,
+    VALID_PACKAGE_1_0_REPEATED_DESC,
+    VALID_PACKAGE_1_0_SINGLE_LINE_DESC,
 )
-import json
+
+# from .test_metadata_constants import *
+import pytest
+
+try:
+    from StringIO import StringIO  ## for Python 2
+except ImportError:
+    from io import StringIO  ## for Python 3
 
 
 class TestMetaData:
@@ -78,28 +92,6 @@ class TestMetaData:
         assert metadata_1 == metadata_2
 
     @pytest.mark.parametrize(
-        "filename", ["test.whl", "test.tar.gz", "test.zip", "test.tar.bz2"]
-    )
-    def test_from_file(self, filename):
-        m_1 = Metadata.from_rfc822(VALID_PACKAGE_2_1_RFC822)
-        test_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
-        m_2 = Metadata.from_file(test_file)
-
-        # For the .whl test case we need to add 2 "\n"s to the description, like the wheel module does
-        _, extension = os.path.splitext(filename)
-        if extension == ".whl":
-            m_1.meta_dict["description"] = m_1.meta_dict["description"] + "\n\n"
-
-        assert m_2 == m_1
-
-    @pytest.mark.parametrize(
-        "filename", ["test_pkg.jpg", "test_pkg.txt", "test_pkg.lib"]
-    )
-    def test_from_file_bad_extension(self, filename):
-        with pytest.raises(UnknownDistributionFormat):
-            Metadata.from_file(filename)
-
-    @pytest.mark.parametrize(
         ("expected_json_string", "input_dict"),
         [
             (VALID_PACKAGE_1_2_JSON, VALID_PACKAGE_1_2_DICT),
@@ -119,22 +111,38 @@ class TestMetaData:
 
         assert expected_json_string == generated_json_string
 
-    # @pytest.mark.parametrize(
-    #     ("expected_rfc822_string", "input_dict"),
-    #     [(VALID_PACKAGE_1_2_RFC822, VALID_PACKAGE_2_1_DICT), (VALID_PACKAGE_1_0_RFC822, VALID_PACKAGE_1_0_DICT),
-    #     (VALID_PACKAGE_1_1_RFC822, VALID_PACKAGE_1_1_DICT), (VALID_PACKAGE_1_2_RFC822, VALID_PACKAGE_1_2_DICT)]
-    # )
-    # def test_to_rfc822(self, expected_rfc822_string, input_dict):
-    #     metadata_1 = Metadata(**input_dict)
-    #     generated_rfc822_string = metadata_1.to_rfc822()
+    @pytest.mark.parametrize(
+        ("expected_rfc822_string", "input_dict"),
+        [
+            (VALID_PACKAGE_2_1_RFC822, VALID_PACKAGE_2_1_DICT),
+            (VALID_PACKAGE_1_0_RFC822, VALID_PACKAGE_1_0_DICT),
+            (VALID_PACKAGE_1_1_RFC822, VALID_PACKAGE_1_1_DICT),
+            (VALID_PACKAGE_1_2_RFC822, VALID_PACKAGE_1_2_DICT),
+        ],
+    )
+    def test_to_rfc822(self, expected_rfc822_string, input_dict):
+        metadata_1 = Metadata(**input_dict)
+        generated_rfc822_string = metadata_1.to_rfc822()
 
-    #     print("Expected RFC822:")
-    #     print(expected_rfc822_string)
-    #     print("\n\nGenerated RFC822:")
-    #     print(generated_rfc822_string)
-    #     print("Generated metadata dict:")
-    #     print(Metadata.from_rfc822(generated_rfc822_string).to_dict())
-    #     assert expected_rfc822_string == generated_rfc822_string
+        print("Metadata_1 Dict's")
+        print(metadata_1.meta_dict)
+
+        print("Expected RFC822:")
+        print(expected_rfc822_string)
+        print("\n\nGenerated RFC822:")
+        print(generated_rfc822_string)
+        print("Expected metadata dict:")
+        print(Metadata.from_rfc822(expected_rfc822_string).to_dict())
+        print("Generated metadata dict:")
+        print(Metadata.from_rfc822(generated_rfc822_string).to_dict())
+
+        assert (
+            Metadata.from_rfc822(generated_rfc822_string).to_dict()
+            == Metadata.from_rfc822(expected_rfc822_string).to_dict()
+        )
+        assert TestMetaData._compare_rfc822_strings(
+            expected_rfc822_string, generated_rfc822_string
+        )
 
     @pytest.mark.parametrize(
         "expected_dict",
@@ -166,9 +174,9 @@ class TestMetaData:
     def test_repeated_description_in_rfc822(self):
         metadata_1 = Metadata.from_rfc822(VALID_PACKAGE_1_0_REPEATED_DESC)
 
-        assert (
-            metadata_1.meta_dict["description"]
-            == "# This is the long description \n\nThis will overwrite the Description field\n"
+        assert metadata_1.meta_dict["description"] == (
+            "# This is the long description \n\n"
+            + "This will overwrite the Description field\n"
         )
 
     def test_single_line_description_in_rfc822(self):
@@ -224,26 +232,10 @@ class TestMetaData:
             == False
         )
 
-    def test_valid_custom_filetype(self, monkeypatch):
-        class custom_distribution_class(Distribution):
-            pass
+    @classmethod
+    def _compare_rfc822_strings(cls, rfc822_1, rfc822_2):
 
-        monkeypatch.setattr(
-            custom_distribution_class,
-            "extract_pkginfo",
-            lambda _: VALID_PACKAGE_1_0_RFC822,
-        )
-        metadata_1 = Metadata.from_file("custom_dist.xz", custom_distribution_class)
+        rfc822_1_dict = Metadata.from_rfc822(rfc822_1).to_dict()
+        rfc822_2_dict = Metadata.from_rfc822(rfc822_2).to_dict()
 
-        assert metadata_1
-
-    def test_invalid_custom_filetype(self):
-        class custom_distribution_class:
-            pass
-
-        with pytest.raises(UnknownDistributionFormat):
-            Metadata.from_file("custom_dist.xz", custom_distribution_class)
-
-    def test_test(self):
-        metadata_1 = Metadata.from_rfc822(VALID_PACKAGE_1_0_REPEATED_DESC)
-        print(metadata_1.to_dict())
+        return rfc822_1_dict == rfc822_2_dict

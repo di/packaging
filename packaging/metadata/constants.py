@@ -1,19 +1,6 @@
-MULTI = {}
-TREAT_AS_MULTI = {}
-SINGLE = {}
-MULTI_1_0 = {
-    "Platform",
-    # "Supported-Platform", 1.1
-    # "Classifier", 1.1
-    # "Requires-Dist", 1.2
-    # "Provides-Dist", 1.2
-    # "Obsoletes-Dist", 1.2
-    # "Requires-External", 1.2
-    # "Project-URL", 1.2
-    # "Provides-Extra", 2.1
-}
+MULTI_1_0 = {"Platform"}  # type :  typing.Set[str]
 
-TREAT_AS_MULTI_1_0 = {"Keywords"}
+TREAT_AS_MULTI_1_0 = {"Keywords"}  # type : typing.Set[str]
 
 SINGLE_1_0 = {
     "Metadata-Version",
@@ -21,21 +8,16 @@ SINGLE_1_0 = {
     "Version",
     "Summary",
     "Description",
-    # "Description-Content-Type", 2.1
     "Home-page",
-    # "Download-URL", 1.1
     "Author",
     "Author-email",
-    # "Maintainer", 1.2
-    # "Maintainer-email", 1.2
     "License",
-    # "Requires-Python", 1.2
-}
+}  # type : typing.Set[str]
 
 
-MULTI_1_1 = {"Platform", "Supported-Platform", "Classifier"}
+MULTI_1_1 = {"Platform", "Supported-Platform", "Classifier"}  # type : typing.Set[str]
 
-TREAT_AS_MULTI_1_1 = {"Keywords"}
+TREAT_AS_MULTI_1_1 = {"Keywords"}  # type : typing.Set[str]
 
 SINGLE_1_1 = {
     "Metadata-Version",
@@ -48,7 +30,7 @@ SINGLE_1_1 = {
     "Author",
     "Author-email",
     "License",
-}
+}  # type : typing.Set[str]
 
 
 MULTI_1_2 = {
@@ -60,9 +42,9 @@ MULTI_1_2 = {
     "Obsoletes-Dist",
     "Requires-External",
     "Project-URL",
-}
+}  # type : typing.Set[str]
 
-TREAT_AS_MULTI_1_2 = {"Keywords"}
+TREAT_AS_MULTI_1_2 = {"Keywords"}  # type : typing.Set[str]
 
 SINGLE_1_2 = {
     "Metadata-Version",
@@ -78,7 +60,7 @@ SINGLE_1_2 = {
     "Maintainer-email",
     "License",
     "Requires-Python",
-}
+}  # type : typing.Set[str]
 
 
 MULTI_2_1 = {
@@ -91,9 +73,9 @@ MULTI_2_1 = {
     "Requires-External",
     "Project-URL",
     "Provides-Extra",
-}
+}  # type : typing.Set[str]
 
-TREAT_AS_MULTI_2_1 = {"Keywords"}
+TREAT_AS_MULTI_2_1 = {"Keywords"}  # type : typing.Set[str]
 
 SINGLE_2_1 = {
     "Metadata-Version",
@@ -110,7 +92,7 @@ SINGLE_2_1 = {
     "Maintainer-email",
     "License",
     "Requires-Python",
-}
+}  # type : typing.Set[str]
 
 
 VERSIONED_METADATA_FIELDS = {
@@ -134,4 +116,4 @@ VERSIONED_METADATA_FIELDS = {
         "TREAT_AS_MULTI": TREAT_AS_MULTI_2_1,
         "SINGLE": SINGLE_2_1,
     },
-}
+}  # type : typing.Dict[str, object]
