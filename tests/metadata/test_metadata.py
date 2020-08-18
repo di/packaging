@@ -3,7 +3,7 @@
 # for complete details.
 from __future__ import absolute_import, division, print_function
 from packaging.metadata import Metadata
-
+from difflib import ndiff
 from .test_metadata_constants import (
     VALID_PACKAGE_2_1_RFC822,
     VALID_PACKAGE_2_1_JSON,
@@ -119,18 +119,6 @@ class TestMetaData:
         metadata_1 = Metadata(**input_dict)
         generated_rfc822_string = metadata_1.to_rfc822()
 
-        print("Metadata_1 Dict's")
-        print(metadata_1.meta_dict)
-
-        print("Expected RFC822:")
-        print(expected_rfc822_string)
-        print("\n\nGenerated RFC822:")
-        print(generated_rfc822_string)
-        print("Expected metadata dict:")
-        print(Metadata.from_rfc822(expected_rfc822_string).to_dict())
-        print("Generated metadata dict:")
-        print(Metadata.from_rfc822(generated_rfc822_string).to_dict())
-
         assert (
             Metadata.from_rfc822(generated_rfc822_string).to_dict()
             == Metadata.from_rfc822(expected_rfc822_string).to_dict()
@@ -168,11 +156,10 @@ class TestMetaData:
 
     def test_repeated_description_in_rfc822(self):
         metadata_1 = Metadata.from_rfc822(VALID_PACKAGE_1_0_REPEATED_DESC)
+        expected_description = "# This is the long description\n\nThis will overwrite the Description field\n"
 
-        assert metadata_1.meta_dict["description"] == (
-            "# This is the long description \n\n"
-            + "This will overwrite the Description field\n"
-        )
+        assert metadata_1.meta_dict["description"] == expected_description
+
 
     def test_single_line_description_in_rfc822(self):
         metdata_1 = Metadata.from_rfc822(VALID_PACKAGE_1_0_SINGLE_LINE_DESC)
