@@ -74,9 +74,6 @@ class Metadata:
 
         return msg.as_string()
 
-    def to_dict(self) -> Dict[str, Union[List[str], str]]:
-        return self.meta_dict
-
     def __iter__(self) -> Iterator:
         return iter(self._meta_dict.items())
 
