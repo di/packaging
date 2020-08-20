@@ -7,7 +7,8 @@ import sys
 
 assert sys.version_info >= (3, 0)
 
-def json_form(val: str) -> str:
+
+def _json_form(val: str) -> str:
     return val.lower().replace("-", "_")
 
 class Metadata:
@@ -42,7 +43,7 @@ class Metadata:
             | metadata_fields["MULTI"]
             | metadata_fields["TREAT_AS_MULTI"]
         ):
-            value = self.meta_dict.get(json_form(field))
+            value = self._meta_dict.get(_json_form(field))
             if value:
                 if field == "Description":
                     # Special case - put in payload
