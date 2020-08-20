@@ -11,6 +11,21 @@ assert sys.version_info >= (3, 0)
 def _json_form(val: str) -> str:
     return val.lower().replace("-", "_")
 
+
+def _canonicalize(
+    metadata: Dict[str, Union[List[str], str]]
+) -> Dict[str, Union[List[str], str]]:
+    """
+    Transforms a metadata object to the canonical representation
+    as specified in
+    https://www.python.org/dev/peps/pep-0566/#json-compatible-metadata
+    All transformed keys should be reduced to lower case. Hyphens
+    should be replaced with underscores, but otherwise should retain all
+    other characters.
+    """
+    return {_json_form(key): value for key, value in metadata.items()}
+
+
 class Metadata:
     def __init__(self, **kwargs: Dict[str, Union[List[str], str]]) -> None:
         self.meta_dict = kwargs
@@ -22,11 +37,11 @@ class Metadata:
 
     @classmethod
     def from_json(cls, data: str) -> "Metadata":
-        return cls(**Metadata._canonicalize(json.loads(data)))
+        return cls(**_canonicalize(json.loads(data)))
 
     @classmethod
     def from_dict(cls, data: Dict[str, Union[List[str], str]]) -> "Metadata":
-        return cls(**Metadata._canonicalize(data))
+        return cls(**_canonicalize(data))
 
     @classmethod
     def from_rfc822(cls, pkginfo_string: str) -> "Metadata":
@@ -108,21 +123,7 @@ class Metadata:
 
             metadata["Description"] = payload
 
-        return Metadata._canonicalize(metadata)
-
-    @classmethod
-    def _canonicalize(
-        cls, metadata: Dict[str, Union[List[str], str]]
-    ) -> Dict[str, Union[List[str], str]]:
-        """
-        Transforms a metadata object to the canonical representation
-        as specified in
-        https://www.python.org/dev/peps/pep-0566/#json-compatible-metadata
-        All transformed keys should be reduced to lower case. Hyphens
-        should be replaced with underscores, but otherwise should retain all
-        other characters.
-        """
-        return {json_form(key): value for key, value in metadata.items()}
+        return _canonicalize(metadata)
 
     def validate(self) -> bool:
         raise NotImplementedError
