@@ -112,12 +112,11 @@ class Metadata:
             else:
                 metadata[key] = value
 
+        # Handle the message payload
         payload = parsed.get_payload()
         if payload:
-
             if "Description" in metadata:
-                print("Both Description and payload given - ignoring Description")
-
+                raise Exception("Duplicate descriptions given")
             metadata["Description"] = payload
 
         return _canonicalize(metadata)
