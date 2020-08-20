@@ -1,6 +1,7 @@
 from email.parser import HeaderParser
 from email.message import Message
 from typing import Dict, Any, Iterator, Union, List
+import inspect
 import json
 from .constants import VERSIONED_METADATA_FIELDS
 import sys
@@ -112,6 +113,8 @@ class Metadata:
                 metadata[key].append(value)
             elif key in metadata_fields["TREAT_AS_MULTI"]:
                 metadata[key] = [val.strip() for val in value.split(",")]
+            elif key == "Description":
+                metadata[key] = inspect.cleandoc(value)
             else:
                 metadata[key] = value
 
