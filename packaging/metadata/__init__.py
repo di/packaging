@@ -29,11 +29,11 @@ def _canonicalize(
 
 class Metadata:
     def __init__(self, **kwargs: Dict[str, Union[List[str], str]]) -> None:
-        self.meta_dict = kwargs
+        self._meta_dict = kwargs
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Metadata):
-            return self.meta_dict == other.meta_dict
+            return self._meta_dict == other._meta_dict
         return False
 
     @classmethod
@@ -49,11 +49,11 @@ class Metadata:
         return cls(**Metadata._pkginfo_string_to_dict(pkginfo_string))
 
     def to_json(self) -> str:
-        return json.dumps(self.meta_dict, sort_keys=True)
+        return json.dumps(self._meta_dict, sort_keys=True)
 
     def to_rfc822(self) -> str:
         msg = Message()
-        metadata_fields = VERSIONED_METADATA_FIELDS[self.meta_dict["metadata_version"]]
+        metadata_fields = VERSIONED_METADATA_FIELDS[self._meta_dict["metadata_version"]]
         for field in (
             metadata_fields["SINGLE"]
             | metadata_fields["MULTI"]
@@ -78,7 +78,7 @@ class Metadata:
         return self.meta_dict
 
     def __iter__(self) -> Iterator:
-        return iter(self.meta_dict.items())
+        return iter(self._meta_dict.items())
 
     @classmethod
     def _pkginfo_string_to_dict(
