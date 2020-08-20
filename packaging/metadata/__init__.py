@@ -45,8 +45,8 @@ class Metadata:
         return cls(**_canonicalize(data))
 
     @classmethod
-    def from_rfc822(cls, pkginfo_string: str) -> "Metadata":
-        return cls(**Metadata._pkginfo_string_to_dict(pkginfo_string))
+    def from_rfc822(cls, rfc822_string: str) -> "Metadata":
+        return cls(**Metadata._rfc822_string_to_dict(rfc822_string))
 
     def to_json(self) -> str:
         return json.dumps(self._meta_dict, sort_keys=True)
@@ -81,8 +81,8 @@ class Metadata:
         return iter(self._meta_dict.items())
 
     @classmethod
-    def _pkginfo_string_to_dict(
-        cls, pkg_info_string: str
+    def _rfc822_string_to_dict(
+        cls, rfc822_string: str
     ) -> Dict[str, Union[List[str], str]]:
         """Extracts metadata information from a metadata-version 2.1 object.
 
@@ -102,7 +102,7 @@ class Metadata:
         - The result should be stored as a string-keyed dictionary.
         """
         metadata = {}  # type : Dict[str, Union[List[str], str]]
-        parsed = HeaderParser().parsestr(pkg_info_string)
+        parsed = HeaderParser().parsestr(rfc822_string)
         metadata_fields = VERSIONED_METADATA_FIELDS[parsed.get("Metadata-Version")]
 
         for key, value in parsed.items():
