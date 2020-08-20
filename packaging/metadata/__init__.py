@@ -103,11 +103,8 @@ class Metadata:
         metadata_fields = VERSIONED_METADATA_FIELDS[parsed.get("Metadata-Version")]
 
         for key, value in parsed.items():
-
             if key in metadata_fields["MULTI"]:
-                if key not in metadata:
-                    metadata[key] = []
-                metadata[key].append(value)
+                metadata.setdefault(key, []).append(value)
             elif key in metadata_fields["TREAT_AS_MULTI"]:
                 metadata[key] = [val.strip() for val in value.split(",")]
             elif key == "Description":
