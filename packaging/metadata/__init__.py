@@ -34,7 +34,7 @@ class Metadata:
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Metadata):
             return self._meta_dict == other._meta_dict
-        return False
+        return NotImplemented
 
     @classmethod
     def from_json(cls, data: str) -> "Metadata":
